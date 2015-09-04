@@ -23,21 +23,38 @@ public class Sources<T> {
     private int requestNumber = 0;
     
     private BehaviorSubject<T> updateStream;
+    
+    public Observable<T> get()
+    {
+         Observable<Data> source = Observable.concat(
+                memory(),
+                disk(),
+                network()
+            )
+            .first();
+    }
+    
+    public Observable<T> fresh()
+    {
+        network();    
+    }
+       
 
     // In order to simulate memory being cleared, but data still on disk
     public void clearMemory() {
         System.out.println("Wiping memory...");
         memory = null;
+        //disk = null; not sure why you would ever want to delete instead of replace
     }
 
-    public Observable<T> memory() {
+    private Observable<T> memory() {
         return Observable.create(subscriber -> {
             subscriber.onNext(memory);
             subscriber.onCompleted();
         });
     }
 
-    public Observable<T> disk() {
+    private Observable<T> disk() {
         Observable<Data> observable = Observable.create(subscriber -> {
             subscriber.onNext(disk);
             subscriber.onCompleted();
@@ -47,7 +64,7 @@ public class Sources<T> {
         return observable.doOnNext(t -> memory = t)
     }
 
-    public Observable<T> network() {
+    private Observable<T> network() {
         Observable<Data> observable = Observable.create(subscriber -> {
             requestNumber++;
             subscriber.onNext(new NetworkRequest());
